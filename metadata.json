@@ -1,0 +1,6 @@
+{
+  "name": "MentePro",
+  "description": "Plataforma estudiantil multitarea con tutor de IA, planes de estudio personalizados, calculadora científica paso a paso, comunidad Workshop, mascota evolutiva, minijuegos, análisis de diapositivas y repaso de ajedrez.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

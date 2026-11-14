@@ -1,0 +1,212 @@
+{
+  "entities": {
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Authenticated student profile, session preference, school context, memberships, study pet progression, and daily AI ticket balance.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "academicLevel": {
+          "type": "string",
+          "enum": ["Primaria", "Secundaria", "Preparatoria", "Universidad", "Posgrado"]
+        },
+        "sessionMode": {
+          "type": "string",
+          "enum": ["gamification", "numeric"]
+        },
+        "themeAccent": {
+          "type": "string",
+          "enum": ["indigo", "emerald", "amber", "obsidian"]
+        },
+        "petName": { "type": "string" },
+        "petLevel": { "type": "integer" },
+        "petXp": { "type": "integer" },
+        "streakDays": { "type": "integer" },
+        "studyCoins": { "type": "integer" },
+        "ticketsRemaining": { "type": "integer" },
+        "lastTicketDate": { "type": "string" },
+        "hasLifetimePass": { "type": "boolean" },
+        "hasMonthlyAgentSub": { "type": "boolean" },
+        "hasProtonExtra25": { "type": "boolean" },
+        "schoolName": { "type": "string" },
+        "schoolNews": { "type": "string" },
+        "studyGroupCode": { "type": "string" },
+        "ageYears": { "type": "integer" },
+        "degreeOrMaster": { "type": "string" },
+        "petSpecies": { "type": "string", "enum": ["buho", "zorro", "dragon", "gato", "autosauro"] },
+        "petAccessory": { "type": "string", "enum": ["ninguno", "lentes", "birrete", "audifonos", "corona"] },
+        "petColorAccent": { "type": "string", "enum": ["indigo", "esmeralda", "dorado", "rosa"] },
+        "weatherSeasonOverride": { "type": "string", "enum": ["auto", "navidad", "lluvia", "soleado", "otono"] },
+        "unlockedBadges": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "displayName", "academicLevel", "sessionMode", "themeAccent",
+        "petName", "petLevel", "petXp", "streakDays", "studyCoins",
+        "ticketsRemaining", "lastTicketDate", "hasLifetimePass", "hasMonthlyAgentSub",
+        "hasProtonExtra25", "schoolName", "schoolNews", "studyGroupCode",
+        "ageYears", "degreeOrMaster", "petSpecies", "petAccessory", "petColorAccent",
+        "weatherSeasonOverride", "unlockedBadges",
+        "createdAt", "updatedAt"
+      ]
+    },
+    "SubjectRecord": {
+      "title": "SubjectRecord",
+      "description": "Student subject with grade used to detect weak subjects and feed AI study plans.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "grade": { "type": "number" },
+        "priority": { "type": "string", "enum": ["reforzar", "estable", "fuerte"] },
+        "targetHoursPerWeek": { "type": "integer" },
+        "completedMinutes": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "grade", "priority", "targetHoursPerWeek", "completedMinutes", "createdAt", "updatedAt"]
+    },
+    "SchoolTeacher": {
+      "title": "SchoolTeacher",
+      "description": "Teacher profile tied to the student's school/secundaria with AI-suggested ways to help in class.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "subject": { "type": "string" },
+        "focusNote": { "type": "string" },
+        "howToHelp": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "subject", "focusNote", "howToHelp", "createdAt", "updatedAt"]
+    },
+    "StudyPlan": {
+      "title": "StudyPlan",
+      "description": "AI-generated or Workshop-downloaded comprehensive study plan.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "academicLevel": { "type": "string" },
+        "focusSubjects": { "type": "array" },
+        "summary": { "type": "string" },
+        "modules": { "type": "array" },
+        "dailyMinutes": { "type": "integer" },
+        "progressPercent": { "type": "integer" },
+        "sourceAuthor": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "academicLevel", "focusSubjects", "summary", "modules", "dailyMinutes", "progressPercent", "sourceAuthor", "createdAt", "updatedAt"]
+    },
+    "SmartTask": {
+      "title": "SmartTask",
+      "description": "AI-assisted homework task with step-by-step solution procedures.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "procedureSteps": { "type": "array" },
+        "completed": { "type": "boolean" },
+        "xpReward": { "type": "integer" },
+        "dueDateLabel": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "subject", "description", "procedureSteps", "completed", "xpReward", "dueDateLabel", "createdAt", "updatedAt"]
+    },
+    "ExamResult": {
+      "title": "ExamResult",
+      "description": "Completed exam or AI duel score record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "title": { "type": "string" },
+        "score": { "type": "integer" },
+        "totalQuestions": { "type": "integer" },
+        "correctAnswers": { "type": "integer" },
+        "difficulty": { "type": "string", "enum": ["basico", "intermedio", "avanzado"] },
+        "feedbackSummary": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "subject", "title", "score", "totalQuestions", "correctAnswers", "difficulty", "feedbackSummary", "createdAt"]
+    },
+    "WorkshopItem": {
+      "title": "WorkshopItem",
+      "description": "Community-shared study plans, activities, exams, and guides in the Workshop.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string", "enum": ["plan", "actividad", "examen", "guia"] },
+        "subject": { "type": "string" },
+        "academicLevel": { "type": "string" },
+        "description": { "type": "string" },
+        "steps": { "type": "array" },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "downloadsCount": { "type": "integer" },
+        "likesCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "title", "category", "subject", "academicLevel", "description", "steps", "visibility", "downloadsCount", "likesCount", "createdAt", "updatedAt"]
+    },
+    "FinanceEntry": {
+      "title": "FinanceEntry",
+      "description": "Personal finance and asset entry for Plan Alto (18+ / Preparatoria / Universidad / Posgrado).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "amount": { "type": "number" },
+        "entryType": { "type": "string", "enum": ["ingreso", "gasto", "bien"] },
+        "category": { "type": "string" },
+        "note": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "amount", "entryType", "category", "note", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/StudentProfile" },
+      "description": "Private student profile, school context, memberships, pet state, and AI ticket balance."
+    },
+    "/users/{userId}/subjects/{subjectId}": {
+      "schema": { "$ref": "#/entities/SubjectRecord" },
+      "description": "Student subjects with grades and auto-detected reinforcement priorities."
+    },
+    "/users/{userId}/school_teachers/{teacherId}": {
+      "schema": { "$ref": "#/entities/SchoolTeacher" },
+      "description": "School teachers and automated suggestions on how the student can help in class."
+    },
+    "/users/{userId}/study_plans/{planId}": {
+      "schema": { "$ref": "#/entities/StudyPlan" },
+      "description": "Personalized AI and downloaded Workshop study plans."
+    },
+    "/users/{userId}/smart_tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/SmartTask" },
+      "description": "Smart tasks with AI-generated step-by-step procedures."
+    },
+    "/users/{userId}/exam_results/{examId}": {
+      "schema": { "$ref": "#/entities/ExamResult" },
+      "description": "Exam and AI duel attempt history."
+    },
+    "/users/{userId}/finance_entries/{entryId}": {
+      "schema": { "$ref": "#/entities/FinanceEntry" },
+      "description": "Personal income, expenses, and assets for 18+ Plan Alto students."
+    },
+    "/workshop_items/{itemId}": {
+      "schema": { "$ref": "#/entities/WorkshopItem" },
+      "description": "Publicly browsable community Workshop resources shared by students."
+    }
+  }
+}

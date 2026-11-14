@@ -1,0 +1,360 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+             ('email' in request.auth.token) &&
+             ('email_verified' in request.auth.token) &&
+             request.auth.token.email == 'villapatoclow@gmail.com' &&
+             request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validation Helpers ---
+    function isValidStudentProfile(data, userId) {
+      return data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             data.academicLevel in ['Primaria', 'Secundaria', 'Preparatoria', 'Universidad', 'Posgrado'] &&
+             data.sessionMode in ['gamification', 'numeric'] &&
+             data.themeAccent in ['indigo', 'emerald', 'amber', 'obsidian'] &&
+             data.petName is string && data.petName.size() >= 1 && data.petName.size() <= 30 &&
+             data.petLevel is int && data.petLevel >= 1 && data.petLevel <= 100 &&
+             data.petXp is int && data.petXp >= 0 && data.petXp <= 1000000 &&
+             data.streakDays is int && data.streakDays >= 0 && data.streakDays <= 10000 &&
+             data.studyCoins is int && data.studyCoins >= 0 && data.studyCoins <= 1000000 &&
+             data.ticketsRemaining is int && data.ticketsRemaining >= 0 && data.ticketsRemaining <= 999 &&
+             data.lastTicketDate is string && data.lastTicketDate.size() >= 1 && data.lastTicketDate.size() <= 20 &&
+             data.hasLifetimePass is bool &&
+             data.hasMonthlyAgentSub is bool &&
+              data.schoolName is string && data.schoolName.size() <= 120 &&
+              data.schoolNews is string && data.schoolNews.size() <= 2000 &&
+              data.studyGroupCode is string && data.studyGroupCode.size() <= 20 &&
+              data.ageYears is int && data.ageYears >= 5 && data.ageYears <= 120 &&
+              data.degreeOrMaster is string && data.degreeOrMaster.size() <= 120 &&
+              data.petSpecies in ['buho', 'zorro', 'dragon', 'gato', 'autosauro'] &&
+              data.petAccessory in ['ninguno', 'lentes', 'birrete', 'audifonos', 'corona'] &&
+              data.petColorAccent in ['indigo', 'esmeralda', 'dorado', 'rosa'] &&
+              (!('hasProtonExtra25' in data) || data.hasProtonExtra25 is bool) &&
+              (!('weatherSeasonOverride' in data) || data.weatherSeasonOverride in ['auto', 'navidad', 'lluvia', 'soleado', 'otono']) &&
+              data.unlockedBadges is list && data.unlockedBadges.size() <= 30 &&
+              (data.unlockedBadges.size() == 0 || data.unlockedBadges[0] is string) &&
+              data.createdAt is timestamp && data.createdAt <= request.time &&
+              data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFinanceEntry(data, userId) {
+      return data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             (data.amount is float || data.amount is int) && data.amount >= 0 && data.amount <= 100000000 &&
+             data.entryType in ['ingreso', 'gasto', 'bien'] &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+             data.note is string && data.note.size() <= 300 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidSubjectRecord(data, userId) {
+      return data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+             (data.grade is float || data.grade is int) && data.grade >= 0 && data.grade <= 10 &&
+             data.priority in ['reforzar', 'estable', 'fuerte'] &&
+             data.targetHoursPerWeek is int && data.targetHoursPerWeek >= 1 && data.targetHoursPerWeek <= 40 &&
+             data.completedMinutes is int && data.completedMinutes >= 0 && data.completedMinutes <= 100000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidSchoolTeacher(data, userId) {
+      return data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 60 &&
+             data.focusNote is string && data.focusNote.size() <= 400 &&
+             data.howToHelp is string && data.howToHelp.size() >= 1 && data.howToHelp.size() <= 600 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidStudyPlan(data, userId) {
+      return data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.academicLevel is string && data.academicLevel.size() >= 1 && data.academicLevel.size() <= 40 &&
+             data.focusSubjects is list && data.focusSubjects.size() <= 15 &&
+             (data.focusSubjects.size() == 0 || data.focusSubjects[0] is string) &&
+             data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 1500 &&
+             data.modules is list && data.modules.size() <= 25 &&
+             data.dailyMinutes is int && data.dailyMinutes >= 10 && data.dailyMinutes <= 600 &&
+             data.progressPercent is int && data.progressPercent >= 0 && data.progressPercent <= 100 &&
+             data.sourceAuthor is string && data.sourceAuthor.size() >= 1 && data.sourceAuthor.size() <= 60 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidSmartTask(data, userId) {
+      return data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 60 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 2500 &&
+             data.procedureSteps is list && data.procedureSteps.size() <= 20 &&
+             (data.procedureSteps.size() == 0 || data.procedureSteps[0] is string) &&
+             data.completed is bool &&
+             data.xpReward is int && data.xpReward >= 0 && data.xpReward <= 500 &&
+             data.dueDateLabel is string && data.dueDateLabel.size() <= 40 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidExamResult(data, userId) {
+      return data.userId == userId &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 60 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.score is int && data.score >= 0 && data.score <= 100 &&
+             data.totalQuestions is int && data.totalQuestions >= 1 && data.totalQuestions <= 50 &&
+             data.correctAnswers is int && data.correctAnswers >= 0 && data.correctAnswers <= data.totalQuestions &&
+             data.difficulty in ['basico', 'intermedio', 'avanzado'] &&
+             data.feedbackSummary is string && data.feedbackSummary.size() <= 1500 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidWorkshopItem(data) {
+      return data.authorId is string && isValidId(data.authorId) &&
+             data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 60 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.category in ['plan', 'actividad', 'examen', 'guia'] &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 60 &&
+             data.academicLevel is string && data.academicLevel.size() >= 1 && data.academicLevel.size() <= 40 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 1500 &&
+             data.steps is list && data.steps.size() <= 20 &&
+             (data.steps.size() == 0 || data.steps[0] is string) &&
+             data.visibility == 'public' &&
+             data.downloadsCount is int && data.downloadsCount >= 0 &&
+             data.likesCount is int && data.likesCount >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // --- User Profile & Subcollections ---
+    match /users/{userId} {
+      allow get: if isAdmin() || (isOwner(userId) && isValidId(userId));
+      allow list: if isAdmin() || isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'academicLevel', 'sessionMode',
+                         'themeAccent', 'petName', 'petLevel', 'petXp', 'streakDays',
+                         'studyCoins', 'ticketsRemaining', 'lastTicketDate',
+                         'hasLifetimePass', 'hasMonthlyAgentSub', 'schoolName',
+                         'schoolNews', 'studyGroupCode', 'ageYears', 'degreeOrMaster',
+                         'petSpecies', 'petAccessory', 'petColorAccent', 'unlockedBadges',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'academicLevel', 'sessionMode',
+                         'themeAccent', 'petName', 'petLevel', 'petXp', 'streakDays',
+                         'studyCoins', 'ticketsRemaining', 'lastTicketDate',
+                         'hasLifetimePass', 'hasMonthlyAgentSub', 'hasProtonExtra25',
+                         'schoolName', 'schoolNews', 'studyGroupCode', 'ageYears',
+                         'degreeOrMaster', 'petSpecies', 'petAccessory', 'petColorAccent',
+                         'weatherSeasonOverride', 'unlockedBadges',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidStudentProfile(incoming(), userId);
+
+      allow update: if (isOwner(userId) || isAdmin()) &&
+                       isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidStudentProfile(incoming(), userId) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'academicLevel', 'sessionMode', 'themeAccent',
+                         'petName', 'petLevel', 'petXp', 'streakDays', 'studyCoins',
+                         'ticketsRemaining', 'lastTicketDate', 'hasLifetimePass',
+                         'hasMonthlyAgentSub', 'hasProtonExtra25', 'schoolName', 'schoolNews',
+                         'studyGroupCode', 'ageYears', 'degreeOrMaster',
+                         'petSpecies', 'petAccessory', 'petColorAccent',
+                         'weatherSeasonOverride', 'unlockedBadges',
+                         'updatedAt'
+                       ]);
+
+      allow delete: if isAdmin() || (isOwner(userId) && isValidId(userId));
+
+      match /subjects/{subjectId} {
+        allow get: if (isOwner(userId) || isAdmin()) && isValidId(subjectId);
+        allow list: if isOwner(userId) || isAdmin();
+
+        allow create: if isOwner(userId) &&
+                         isValidId(subjectId) &&
+                         incoming().keys().hasAll(['userId', 'name', 'grade', 'priority', 'targetHoursPerWeek', 'completedMinutes', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'name', 'grade', 'priority', 'targetHoursPerWeek', 'completedMinutes', 'createdAt', 'updatedAt']) &&
+                         isValidSubjectRecord(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(subjectId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidSubjectRecord(incoming(), userId) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'grade', 'priority', 'targetHoursPerWeek', 'completedMinutes', 'updatedAt']);
+
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(subjectId);
+      }
+
+      match /school_teachers/{teacherId} {
+        allow get: if (isOwner(userId) || isAdmin()) && isValidId(teacherId);
+        allow list: if isOwner(userId) || isAdmin();
+
+        allow create: if isOwner(userId) &&
+                         isValidId(teacherId) &&
+                         incoming().keys().hasAll(['userId', 'name', 'subject', 'focusNote', 'howToHelp', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'name', 'subject', 'focusNote', 'howToHelp', 'createdAt', 'updatedAt']) &&
+                         isValidSchoolTeacher(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(teacherId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidSchoolTeacher(incoming(), userId) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'subject', 'focusNote', 'howToHelp', 'updatedAt']);
+
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(teacherId);
+      }
+
+      match /study_plans/{planId} {
+        allow get: if (isOwner(userId) || isAdmin()) && isValidId(planId);
+        allow list: if isOwner(userId) || isAdmin();
+
+        allow create: if isOwner(userId) &&
+                         isValidId(planId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'academicLevel', 'focusSubjects', 'summary', 'modules', 'dailyMinutes', 'progressPercent', 'sourceAuthor', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'academicLevel', 'focusSubjects', 'summary', 'modules', 'dailyMinutes', 'progressPercent', 'sourceAuthor', 'createdAt', 'updatedAt']) &&
+                         isValidStudyPlan(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(planId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidStudyPlan(incoming(), userId) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'academicLevel', 'focusSubjects', 'summary', 'modules', 'dailyMinutes', 'progressPercent', 'updatedAt']);
+
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(planId);
+      }
+
+      match /smart_tasks/{taskId} {
+        allow get: if (isOwner(userId) || isAdmin()) && isValidId(taskId);
+        allow list: if isOwner(userId) || isAdmin();
+
+        allow create: if isOwner(userId) &&
+                         isValidId(taskId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'subject', 'description', 'procedureSteps', 'completed', 'xpReward', 'dueDateLabel', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'subject', 'description', 'procedureSteps', 'completed', 'xpReward', 'dueDateLabel', 'createdAt', 'updatedAt']) &&
+                         isValidSmartTask(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(taskId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidSmartTask(incoming(), userId) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'subject', 'description', 'procedureSteps', 'completed', 'xpReward', 'dueDateLabel', 'updatedAt']);
+
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(taskId);
+      }
+
+      match /exam_results/{examId} {
+        allow get: if (isOwner(userId) || isAdmin()) && isValidId(examId);
+        allow list: if isOwner(userId) || isAdmin();
+
+        allow create: if isOwner(userId) &&
+                         isValidId(examId) &&
+                         incoming().keys().hasAll(['userId', 'subject', 'title', 'score', 'totalQuestions', 'correctAnswers', 'difficulty', 'feedbackSummary', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'subject', 'title', 'score', 'totalQuestions', 'correctAnswers', 'difficulty', 'feedbackSummary', 'createdAt']) &&
+                         isValidExamResult(incoming(), userId);
+
+        allow update: if false;
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(examId);
+      }
+
+      match /finance_entries/{entryId} {
+        allow get: if (isOwner(userId) || isAdmin()) && isValidId(entryId);
+        allow list: if isOwner(userId) || isAdmin();
+
+        allow create: if isOwner(userId) &&
+                         isValidId(entryId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'amount', 'entryType', 'category', 'note', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'amount', 'entryType', 'category', 'note', 'createdAt', 'updatedAt']) &&
+                         isValidFinanceEntry(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(entryId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidFinanceEntry(incoming(), userId) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'amount', 'entryType', 'category', 'note', 'updatedAt']);
+
+        allow delete: if (isOwner(userId) || isAdmin()) && isValidId(entryId);
+      }
+    }
+
+    // --- Community Workshop Collection ---
+    match /workshop_items/{itemId} {
+      allow get: if isSignedIn() && isValidId(itemId) && (existing().visibility == 'public' || isAdmin());
+      allow list: if isSignedIn() && (existing().visibility == 'public' || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(itemId) &&
+                       incoming().authorId == request.auth.uid &&
+                       incoming().downloadsCount == 0 &&
+                       incoming().likesCount == 0 &&
+                       incoming().keys().hasAll([
+                         'authorId', 'authorName', 'title', 'category', 'subject',
+                         'academicLevel', 'description', 'steps', 'visibility',
+                         'downloadsCount', 'likesCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'authorId', 'authorName', 'title', 'category', 'subject',
+                         'academicLevel', 'description', 'steps', 'visibility',
+                         'downloadsCount', 'likesCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidWorkshopItem(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(itemId) &&
+                       isValidWorkshopItem(incoming()) &&
+                       incoming().authorId == existing().authorId &&
+                       incoming().createdAt == existing().createdAt && (
+                         (existing().authorId == request.auth.uid &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'subject', 'academicLevel', 'description', 'steps', 'updatedAt'])) ||
+                         (incoming().diff(existing()).affectedKeys().hasOnly(['downloadsCount', 'updatedAt']) &&
+                          incoming().downloadsCount == existing().downloadsCount + 1) ||
+                         (incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'updatedAt']) &&
+                          incoming().likesCount == existing().likesCount + 1)
+                       );
+
+      allow delete: if isSignedIn() && isValidId(itemId) && (existing().authorId == request.auth.uid || isAdmin());
+    }
+  }
+}
